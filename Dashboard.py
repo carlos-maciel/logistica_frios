@@ -23,3 +23,7 @@ fig_status = px.pie(status_counts, values=status_counts.values, names=status_cou
 fig_status.update_traces(textinfo='percent+label')
 st.plotly_chart(fig_status, use_container_width=True)
 
+maquinas_baixa_bateria = df[df['NivelEnergia'] < 30]
+
+st.subheader("Máquinas com energia abaixo de 30%")
+st.dataframe(maquinas_baixa_bateria[['id', 'PlacaVeiculo', 'NivelEnergia']])
