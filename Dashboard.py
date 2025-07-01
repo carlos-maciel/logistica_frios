@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dotenv import load_dotenv
 from supabase import create_client, Client
-import os
 
-load_dotenv()
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+url: str = st.secrets["SUPABASE_URL"]
+key: str = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(url, key)
 
 response = supabase.table("monitoramento").select("*").execute()
@@ -16,5 +13,4 @@ df = pd.DataFrame(response.data)
 st.write("Dados da tabela:")
 st.dataframe(df)
 
-# Inicio
 st.title("Dashboard")
