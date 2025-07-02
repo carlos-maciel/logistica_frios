@@ -25,5 +25,7 @@ st.plotly_chart(fig_status, use_container_width=True)
 
 maquinas_baixa_bateria = df[df['NivelEnergia'] < 30]
 maquinas_baixa_bateria['Problema'] = 'Nivel de energia baixo'
+maquinas_baixa_bateria = maquinas_baixa_bateria.rename(columns={'NivelEnergia': 'Valor Atual'})
+maquinas_baixa_bateria['Valor Esperado'] = '> 30'
 
-st.dataframe(maquinas_baixa_bateria[['Problema', 'id', 'PlacaVeiculo', 'NivelEnergia', ]],  use_container_width=True)
+st.dataframe(maquinas_baixa_bateria[['Problema', 'id', 'PlacaVeiculo', 'Valor Atual', 'Valor Esperado', ]],  use_container_width=True)
