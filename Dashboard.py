@@ -19,9 +19,59 @@ supabase: Client = create_client(url, key)
 response = supabase.table("monitoramento").select("*").execute()
 
 df = pd.DataFrame(response.data)
+
+# Função para calcular alertas com base nos dados do DataFrame
+def calcula_alertas(df):
+    maquinas_baixa_bateria = df[df['NivelEnergia'] < 30].copy()
+    maquinas_baixa_bateria['Problema'] = 'Nivel de energia baixo'
+    maquinas_baixa_bateria = maquinas_baixa_bateria.rename(columns={'NivelEnergia': 'Valor Atual'})
+    maquinas_baixa_bateria['Valor Esperado'] = '> 30'
+
+    maquinas_temp_alta = df[df['TemperaturaInterna'] > -18].copy()
+    maquinas_temp_alta['Problema'] = 'Temperatura interna acima do ideal'
+    maquinas_temp_alta = maquinas_temp_alta.rename(columns={'TemperaturaInterna': 'Valor Atual'})
+    maquinas_temp_alta['Valor Esperado'] = '<= -18'
+
+    maquinas_temp_baixa = df[df['TemperaturaInterna'] < -22].copy()
+    maquinas_temp_baixa['Problema'] = 'Temperatura interna abaixo do ideal'
+    maquinas_temp_baixa = maquinas_temp_baixa.rename(columns={'TemperaturaInterna': 'Valor Atual'})
+    maquinas_temp_baixa['Valor Esperado'] = '>= -22'
+
+    maquinas_umidade_alta = df[df['Umidade'] > 80].copy()
+    maquinas_umidade_alta['Problema'] = 'Umidade acima do ideal'
+    maquinas_umidade_alta = maquinas_umidade_alta.rename(columns={'Umidade': 'Valor Atual'})
+    maquinas_umidade_alta['Valor Esperado'] = '<= 80'
+
+    maquinas_umidade_baixa = df[df['Umidade'] < 50].copy()
+    maquinas_umidade_baixa['Problema'] = 'Umidade abaixo do ideal'
+    maquinas_umidade_baixa = maquinas_umidade_baixa.rename(columns={'Umidade': 'Valor Atual'})
+    maquinas_umidade_baixa['Valor Esperado'] = '>= 50'
+
+    colunas = ['Problema', 'id', 'PlacaVeiculo', 'Valor Atual', 'Valor Esperado']
+
+    maquinas_alerta = pd.concat([
+        maquinas_baixa_bateria[colunas],
+        maquinas_temp_alta[colunas],
+        maquinas_temp_baixa[colunas],
+        maquinas_umidade_alta[colunas],
+        maquinas_umidade_baixa[colunas]
+    ], ignore_index=True)
+    return maquinas_alerta
+
 df["DataHora"] = pd.to_datetime(df["DataHora"])
 
 st.title("Dashboard - Logística de Frios e Perecíveis ")
+
+# Verifica quantos alertas devem ser exibidos
+maquinas_alerta = calcula_alertas(df)
+
+# Verifica se há alertas que devem ser exibidos
+num_problemas = len(maquinas_alerta)
+
+if num_problemas > 0:
+    st.warning(f"⚠️ Atenção: {num_problemas} problemas encontrados que exigem atenção!")
+else:
+    st.success("Nenhum problema crítico encontrado no momento.")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Mapa", "Status", "Falhas", "Temperatura Interna", "Correlação"])
 
@@ -59,20 +109,8 @@ with tab1:
     else:
         st.info("Nenhum caminhão apresentou falha.")
 with tab2:
-    status_counts = df['StatusEquipamento'].value_counts(normalize=True) * 100
-    fig_status = px.pie(status_counts, values=status_counts.values, names=status_counts.index, 
-                        title="Status Geral das Máquinas",
-                        labels={"machine_status": "Status", "value": "Percentual"},
-                        color_discrete_sequence=px.colors.qualitative.Pastel)
-    fig_status.update_traces(textinfo='percent+label')
-    st.plotly_chart(fig_status, use_container_width=True)
 
-    maquinas_baixa_bateria = df[df['NivelEnergia'] < 30]
-    maquinas_baixa_bateria['Problema'] = 'Nivel de energia baixo'
-    maquinas_baixa_bateria = maquinas_baixa_bateria.rename(columns={'NivelEnergia': 'Valor Atual'})
-    maquinas_baixa_bateria['Valor Esperado'] = '> 30'
-
-    st.dataframe(maquinas_baixa_bateria[['Problema', 'id', 'PlacaVeiculo', 'Valor Atual', 'Valor Esperado', ]],  use_container_width=True)
+    st.dataframe(maquinas_alerta, use_container_width=True)
 
 with tab3:
     # Quantidade de falhas por veículo
